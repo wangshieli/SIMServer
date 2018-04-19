@@ -74,6 +74,7 @@ typedef struct _socket_obj
 	int nKey;
 	bool bFull;
 	bool bEmpty;
+	byte sum;
 	volatile long nRef;
 	TCHAR buf[1];
 
@@ -92,6 +93,7 @@ typedef struct _socket_obj
 		nKey = 0;
 		bFull = false;
 		bEmpty = true;
+		sum = 0;
 		nRef = 1;
 		InitializeCriticalSection(&cs);
 		lstSend->clear();
@@ -144,26 +146,170 @@ typedef struct _socket_obj
 		bEmpty = false;
 	}
 
+	byte csum(unsigned char *addr, int count)
+	{
+		//byte sum = 0;
+		for (int i = 0; i< count; i++)
+		{
+			sum += (byte)addr[i];
+		}
+		return sum;
+	}
+
 	DWORD GetCmdDataLength()
 	{
 		if (bEmpty)
 			return 0;
 
 		DWORD dwNum = 0;
+		sum = 0;
 		if (dwWritepos > dwReadpos)
 		{
-			for (DWORD i = dwReadpos; i < dwWritepos; i++)
+			DWORD nDataNum = dwWritepos - dwReadpos;
+			if (nDataNum < 6)
+				return 0;
+
+			if ((UCHAR)buf[dwReadpos] != 0xfb || (UCHAR)buf[dwReadpos + 1] != 0xfc)//  没有数据开始标志
 			{
-				++dwNum;
-				if (buf[i] == '\n')
-				{
-					return dwNum;
-				}
+				closesocket(sock);
+				sock = INVALID_SOCKET;
+				return 0;
 			}
+
+			DWORD dwFrameLen = *(INT*)(buf + dwReadpos + 2);
+			if ((dwFrameLen + 8) > nDataNum)
+				return 0;
+
+			byte nSum = buf[dwReadpos + 6 + dwFrameLen];
+			if (nSum != csum((unsigned char*)buf + dwReadpos + 6, dwFrameLen))
+			{
+				closesocket(sock);
+				sock = INVALID_SOCKET;
+				return 0;
+			}
+
+			if (0x0d != buf[dwReadpos + dwFrameLen + 7])
+			{
+				closesocket(sock);
+				sock = INVALID_SOCKET;
+				return 0;
+			}
+
+			dwReadpos += 6;
+
+			return dwFrameLen+2;
+
+			//for (DWORD i = dwReadpos; i < dwWritepos; i++)
+			//{
+			//	++dwNum;
+			//	if (buf[i] == '\n')
+			//	{
+			//		return dwNum;
+			//	}
+			//}
 		}
 		else
 		{
-			for (DWORD i = dwReadpos; i < dwBufsize; i++)
+			DWORD dwLeft = dwBufsize - dwReadpos;
+			if (dwLeft < 6)
+			{
+				char subchar[6];
+				memcpy(subchar, buf + dwReadpos, dwLeft);
+				memcpy(subchar + dwLeft, buf, 6 - dwLeft);
+
+				if ((UCHAR)subchar[0] != 0xfb || (UCHAR)subchar[1] != 0xfc)//  没有数据开始标志
+				{
+					closesocket(sock);
+					sock = INVALID_SOCKET;
+					return 0;
+				}
+
+				DWORD dwFrameLen = *(INT*)(subchar + 2);
+				if ((dwFrameLen + 8) > (dwLeft + dwWritepos)) // 消息太长了
+				{
+					if (bFull)
+					{
+						closesocket(sock);
+						sock = INVALID_SOCKET;
+					}
+					return 0;
+				}
+
+				DWORD dwIndex = (dwReadpos + 6 - dwBufsize);
+				byte nSum = buf[dwIndex + dwFrameLen];
+				if (nSum != csum((unsigned char*)buf + dwIndex, dwFrameLen))
+				{
+					closesocket(sock);
+					sock = INVALID_SOCKET;
+					return 0;
+				}
+
+				if (0x0d != buf[dwIndex + dwFrameLen + 1])
+				{
+					closesocket(sock);
+					sock = INVALID_SOCKET;
+					return 0;
+				}
+
+				dwReadpos = (dwReadpos + 6) > dwBufsize ? (dwReadpos + 6 - dwBufsize) : (dwReadpos + 6);
+
+				return dwFrameLen+2;
+			}
+			else
+			{
+				if ((UCHAR)buf[dwReadpos] != 0xfb || (UCHAR)buf[dwReadpos + 1] != 0xfc)//  没有数据开始标志
+				{
+					closesocket(sock);
+					sock = INVALID_SOCKET;
+					return 0;
+				}
+
+				DWORD dwFrameLen = *(INT*)(buf + dwReadpos + 2);
+				if ((dwFrameLen + 8) > (dwLeft + dwWritepos)) // 消息太长了
+				{
+					if (bFull)
+					{
+						closesocket(sock);
+						sock = INVALID_SOCKET;
+					}
+					return 0;
+				}
+					
+				byte nSum = buf[(dwReadpos + 6 + dwFrameLen) >= dwBufsize ? (dwReadpos + 6 + dwFrameLen- dwBufsize): (dwReadpos + 6 + dwFrameLen)];
+				if ((dwFrameLen + 6) > dwLeft)
+				{
+					csum((unsigned char*)buf + dwReadpos + 6, dwLeft - 6);
+					csum((unsigned char*)buf, dwFrameLen - dwLeft + 6);
+					if (nSum != sum)
+					{
+						closesocket(sock);
+						sock = INVALID_SOCKET;
+						return 0;
+					}
+				}
+				else
+				{
+					if (nSum != csum((unsigned char*)buf + dwReadpos + 6, dwFrameLen))
+					{
+						closesocket(sock);
+						sock = INVALID_SOCKET;
+						return 0;
+					}
+				}
+
+				if (0x0d != buf[(dwReadpos + dwFrameLen + 7) >= dwBufsize ? (dwReadpos + dwFrameLen + 7-dwBufsize): (dwReadpos + dwFrameLen + 7)])
+				{
+					closesocket(sock);
+					sock = INVALID_SOCKET;
+					return 0;
+				}
+
+				dwReadpos = (dwReadpos + 6) > dwBufsize ? (dwReadpos + 6 - dwBufsize) : (dwReadpos + 6);;
+
+				return dwFrameLen+2;
+			}
+
+	/*		for (DWORD i = dwReadpos; i < dwBufsize; i++)
 			{
 				++dwNum;
 				if (buf[i] == '\n')
@@ -178,7 +324,7 @@ typedef struct _socket_obj
 				{
 					return dwNum;
 				}
-			}
+			}*/
 		}
 		return 0;
 	}
