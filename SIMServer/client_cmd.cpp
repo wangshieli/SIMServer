@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include <msgpack.hpp>
 #include "SignalData.h"
 #include "client_cmd.h"
 #include "client_RequestPost.h"

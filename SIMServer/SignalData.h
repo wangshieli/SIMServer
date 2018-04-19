@@ -94,7 +94,6 @@ typedef struct _socket_obj
 		bEmpty = true;
 		nRef = 1;
 		InitializeCriticalSection(&cs);
-		lstSend = new std::list<BUFFER_OBJ*>;
 		lstSend->clear();
 	}
 

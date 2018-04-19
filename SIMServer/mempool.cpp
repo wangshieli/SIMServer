@@ -28,7 +28,10 @@ SOCKET_OBJ* allocSObj(DWORD nSize)
 
 	EnterCriticalSection(&csSObj);
 	if (vctSObj.empty())
+	{
 		obj = (SOCKET_OBJ*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, nSize);
+		obj->lstSend = new std::list<BUFFER_OBJ*>;
+	}
 	else
 	{
 		obj = vctSObj.back();
@@ -48,7 +51,10 @@ void freeSObj(SOCKET_OBJ* obj)
 	if (vctSObj.size() < 1000)
 		vctSObj.push_back(obj);
 	else
+	{
+		obj->Clear();
 		HeapFree(GetProcessHeap(), HEAP_NO_SERIALIZE, obj);
+	}
 	LeaveCriticalSection(&csSObj);
 }
 

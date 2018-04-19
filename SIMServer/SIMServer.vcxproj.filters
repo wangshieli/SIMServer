@@ -48,6 +48,9 @@
     <ClInclude Include="client_cmd.h">
       <Filter>客户端请求</Filter>
     </ClInclude>
+    <ClInclude Include="client_data.h">
+      <Filter>客户端请求</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -72,6 +75,9 @@
       <Filter>客户端请求</Filter>
     </ClCompile>
     <ClCompile Include="client_cmd.cpp">
+      <Filter>客户端请求</Filter>
+    </ClCompile>
+    <ClCompile Include="client_data.cpp">
       <Filter>客户端请求</Filter>
     </ClCompile>
   </ItemGroup>

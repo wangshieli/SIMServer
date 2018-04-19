@@ -72,8 +72,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\CDBServer\tbb_concurrent_hash_map\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\CDBServer\tbb_concurrent_hash_map\build\vs2013\Win32\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\..\CDBServer\msgpack-c\include;..\..\CDBServer\tbb_concurrent_hash_map\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\..\CDBServer\tbb_concurrent_hash_map\build\vs2013\Win32\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -152,6 +152,7 @@
   <ItemGroup>
     <ClInclude Include="client_cmd.h" />
     <ClInclude Include="client_completion.h" />
+    <ClInclude Include="client_data.h" />
     <ClInclude Include="client_RequestPost.h" />
     <ClInclude Include="global_init.h" />
     <ClInclude Include="mempool.h" />
@@ -162,6 +163,7 @@
   <ItemGroup>
     <ClCompile Include="client_cmd.cpp" />
     <ClCompile Include="client_completion.cpp" />
+    <ClCompile Include="client_data.cpp" />
     <ClCompile Include="client_RequestPost.cpp" />
     <ClCompile Include="global_init.cpp" />
     <ClCompile Include="mempool.cpp" />
