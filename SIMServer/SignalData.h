@@ -304,7 +304,7 @@ typedef struct _socket_obj
 					return 0;
 				}
 
-				dwReadpos = (dwReadpos + 6) > dwBufsize ? (dwReadpos + 6 - dwBufsize) : (dwReadpos + 6);;
+				dwReadpos = (dwReadpos + 6) > dwBufsize ? (dwReadpos + 6 - dwBufsize) : (dwReadpos + 6);
 
 				return dwFrameLen+2;
 			}
